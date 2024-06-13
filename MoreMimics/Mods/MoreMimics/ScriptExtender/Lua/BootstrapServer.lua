@@ -135,7 +135,7 @@ Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(object, status
             
             if createdGUID then
                 --_P(string.format('Successfully spawned %s [%s]', creatureTplId, createdGUID))
-                if Get("HarderMimics") == 1 then
+                if Get("HarderMimics") then
                     TryAddSpell(createdGUID, "Target_Vicious_Bite_Mimic")
                 end
                 Osi.MoveAllItemsTo(object, createdGUID, 0, 0, 1)
