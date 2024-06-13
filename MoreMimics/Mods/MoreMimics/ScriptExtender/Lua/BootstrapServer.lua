@@ -1,7 +1,14 @@
 local md5 = Ext.Require("md5.lua")
 local utils = Ext.Require("utils.lua")
+
+
+ModuleUUID = "c19ca43a-c3c7-4e58-9d00-f7d928e72074"
+
+function Get(ID_name)
+	return Mods.BG3MCM.MCMAPI:GetSettingValue(ID_name, ModuleUUID)
+end
+
 -- Define global variables
-ConfigTable = {}
 HasPrinted = {}
 
 Ext.Osiris.RegisterListener("LevelGameplayStarted", 2, "after", function(levelName, _)
@@ -22,7 +29,7 @@ Ext.Osiris.RegisterListener("MovedBy", 2, "before", function(item, character)
     end
 end)
 
-Ext.Osiris.RegisterListener("AttackedBy", 7, "after", function(defender, attackerOwner, attacker2, damageType, damageAmount, damageCause, storyActionID)
+Ext.Osiris.RegisterListener("AttackedBy", 7, "before", function(defender, attackerOwner, attacker2, damageType, damageAmount, damageCause, storyActionID)
     local tags = utils.GetTags(defender)
     --_P(defender)
     if tags.OsirisTags['ACT1_HAG_ILLUSION'] then
@@ -30,8 +37,8 @@ Ext.Osiris.RegisterListener("AttackedBy", 7, "after", function(defender, attacke
     end
 end)
 
-Ext.Osiris.RegisterListener("Opened", 1, "after", function(item)
-    _P(item)
+Ext.Osiris.RegisterListener("Opened", 1, "before", function(item)
+    --_P(item)
     local tags = utils.GetTags(item)
     if tags.OsirisTags['ACT1_HAG_ILLUSION'] then
         Osi.ApplyStatus(item, 'HAG_MASK_ILLUSION', 60, 1, Osi.GetHostCharacter())
@@ -67,9 +74,9 @@ Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(object, status
             if string.find(object, "PlayerCampChest") then
                 return
             end
-            local convertToChestThreshold = GuidToProperty(ConfigTable["Seed"], object)
-            _P(object, convertToChestThreshold, utils.PercentToReal(ConfigTable["EncounterPercentage"]))
-            if (utils.PercentToReal(ConfigTable["EncounterPercentage"]) > convertToChestThreshold) then
+            local convertToChestThreshold = GuidToProperty(Get("Seed"), object)
+            --_P(object, convertToChestThreshold, utils.PercentToReal(Get("EncounterPercentage")))
+            if (utils.PercentToReal(Get("EncounterPercentage")) > convertToChestThreshold) then
                 --_P("setting tag to chest", object)
                 Osi.SetTag(object, '2a84bac4-3111-43a6-8f0c-9995b6187962')
             end
@@ -128,7 +135,7 @@ Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(object, status
             
             if createdGUID then
                 --_P(string.format('Successfully spawned %s [%s]', creatureTplId, createdGUID))
-                if ConfigTable["HarderMimics"] == 1 then
+                if Get("HarderMimics") == 1 then
                     TryAddSpell(createdGUID, "Target_Vicious_Bite_Mimic")
                 end
                 Osi.MoveAllItemsTo(object, createdGUID, 0, 0, 1)
@@ -218,5 +225,3 @@ end
 
 print("MoreMimics is loaded successfully")
 
--- Call the readJsonFile function to read the JSON file and store the returned table in ConfigTable
-utils.ReadJsonFile()
