@@ -5,11 +5,107 @@
             "TabId": "General",
             "Sections": [
                 {
-                    "SectionId": "More mimics",
+                    "SectionId": "Global setting",
                     "SectionName": "More mimics",
                     "Settings": [
                         {
-                            "Id": "EncounterPercentage",
+                            "Id": "Seed",
+                            "Name": "Seed",
+                            "Type": "text",
+                            "Default": "chesty",
+                            "Description": "Used to determine which chest turns into a mimic. Consistent across all playthroughs. ",
+                            "Handles": {
+                                "DescriptionHandle": "hb702ada3g2103g4fcbga9d3g4dc29aa9afdc",
+                                "NameHandle": "h07b4a349gacabg413bg9d92gfee4fff3651b"
+                            }
+                        },
+                        {
+                            "Id": "MimicsSettingsType",
+                            "Name": "Mimics Setting configuration",
+                            "Type": "radio",
+                            "Default": "overall",
+                            "Description": "Allow to have overall or custom settings based on chest quality",
+                            "Handles": {
+                                "DescriptionHandle": "ha62e2361g99c6g43b5gb830g7c3e8a9003dc",
+                                "NameHandle": "ha07c36f1gdacdg4e26gbb2bgf8ee440e09c1",
+                                "ChoicesHandles": [
+                                    "ha07c36f1gdacdg4e26gbb2bgf8ee440e09c2",
+                                    "ha07c36f1gdacdg4e26gbb2bgf8ee440e09c3"
+                                ]
+                            },
+                            "Options": {
+                                "Choices": ["overall", "Chest's quality based"]
+                            }
+                        },
+                        {
+                            "Id": "General_EncounterPercentage",
+                            "OldId": "EncounterPercentage",
+                            "Name": "EncounterPercentage",
+                            "Type": "slider_int",
+                            "Default": 100,
+                            "Description": "The likelihood of a chest turning into a mimic",
+                            "VisibleIf": {
+                                "Conditions": [
+                                    {
+                                        "SettingId": "MimicsSettingsType",
+                                        "Operator": "==",
+                                        "ExpectedValue": "overall"
+                                    }
+                                ]
+                            },
+                            "Handles": {
+                                "DescriptionHandle": "ha62e2351g99c6g43b5gb830g7c3e8a9003dc",
+                                "NameHandle": "ha07c36f1gdacdg4e25gbb2bgf8ee440e09c1"
+                            },"Options": {
+                                "Min": 0,
+                                "Max": 100
+                            }
+                        },
+                        {
+                            "Id": "General_HarderMimics",
+                            "Name": "HarderMimics",
+                            "Type": "checkbox",
+                            "Default": true,
+                            "Description": "Give Mimics the ability to steal your armor. Turning this off will restore default behaviour",
+                            "VisibleIf": {
+                                "Conditions": [
+                                    {
+                                        "SettingId": "MimicsSettingsType",
+                                        "Operator": "==",
+                                        "ExpectedValue": "overall"
+                                    }
+                                ]
+                            },
+                            "Handles": {
+                                "DescriptionHandle": "hb702ada3g2103g4fcbga0d3g4dc29aa9afdc",
+                                "NameHandle": "h07b4a349gacabg413bg9d92gfee5fff3651b"
+                            }
+                        }
+                    ],
+                    "Handles": {
+                        "NameHandle": "h6486a618ge723g479fga67dg84a92417b9ab"
+                    }
+                }
+            ]
+        },
+        {   "TabName": "Poor Chest Settings",
+            "TabId": "PoorChestSettings",
+            "VisibleIf": {
+                "Conditions": [
+                    {
+                        "SettingId": "MimicsSettingsType",
+                        "Operator": "==",
+                        "ExpectedValue": "Chest's quality based"
+                    }
+                ]
+            },
+            "Sections": [
+                {
+                    "SectionId": "PoorChestSettings",
+                    "SectionName": "Poor Chest settings",
+                    "Settings": [
+                        {
+                            "Id": "Poor_EncounterPercentage",
                             "Name": "EncounterPercentage",
                             "Type": "slider_int",
                             "Default": 20,
@@ -23,18 +119,7 @@
                             }
                         },
                         {
-                            "Id": "Seed",
-                            "Name": "Seed",
-                            "Type": "text",
-                            "Default": "chesty",
-                            "Description": "Used to determine which chest turns into a mimic. Consistent across all playthroughs. ",
-                            "Handles": {
-                                "DescriptionHandle": "hb702ada3g2103g4fcbga9d3g4dc29aa9afdc",
-                                "NameHandle": "h07b4a349gacabg413bg9d92gfee4fff3651b"
-                            }
-                        },
-                        {
-                            "Id": "HarderMimics",
+                            "Id": "Poor_HarderMimics",
                             "Name": "HarderMimics",
                             "Type": "checkbox",
                             "Default": true,
@@ -46,7 +131,103 @@
                         }
                     ],
                     "Handles": {
-                        "NameHandle": "h6486a618ge723g479fga67dg84a92417b9ab"
+                        "NameHandle": "h6486a618ge723g479fga67dg84a92417b2ab"
+                    }
+                }
+            ]
+        },
+        {   "TabName": "Ok Chest Settings",
+            "TabId": "OkChestSettings",
+            "VisibleIf": {
+                "Conditions": [
+                    {
+                        "SettingId": "MimicsSettingsType",
+                        "Operator": "==",
+                        "ExpectedValue": "Chest's quality based"
+                    }
+                ]
+            },
+            "Sections": [
+                {
+                    "SectionId": "OkChestSettings",
+                    "SectionName": "Ok Chest settings",
+                    "Settings": [
+                        {
+                            "Id": "Ok_EncounterPercentage",
+                            "Name": "EncounterPercentage",
+                            "Type": "slider_int",
+                            "Default": 20,
+                            "Description": "The likelihood of a chest turning into a mimic",
+                            "Handles": {
+                                "DescriptionHandle": "ha62e2351g99c6g43b5gb830g7c3e8a9003dc",
+                                "NameHandle": "ha07c36f1gdacdg4e25gbb2bgf8ee440e09c1"
+                            },"Options": {
+                                "Min": 0,
+                                "Max": 100
+                            }
+                        },
+                        {
+                            "Id": "Ok_HarderMimics",
+                            "Name": "HarderMimics",
+                            "Type": "checkbox",
+                            "Default": true,
+                            "Description": "Give Mimics the ability to steal your armor. Turning this off will restore default behaviour",
+                            "Handles": {
+                                "DescriptionHandle": "hb702ada3g2103g4fcbga0d3g4dc29aa9afdc",
+                                "NameHandle": "h07b4a349gacabg413bg9d92gfee5fff3651b"
+                            }
+                        }
+                    ],
+                    "Handles": {
+                        "NameHandle": "h6486a618ge723g479fga67dg84a92417b2cb"
+                    }
+                }
+            ]
+        },
+        {   "TabName": "Good Chest Settings",
+            "TabId": "GoodChestSettings",
+            "VisibleIf": {
+                "Conditions": [
+                    {
+                        "SettingId": "MimicsSettingsType",
+                        "Operator": "==",
+                        "ExpectedValue": "Chest's quality based"
+                    }
+                ]
+            },
+            "Sections": [
+                {
+                    "SectionId": "GoodChestSettings",
+                    "SectionName": "Good Chest settings",
+                    "Settings": [
+                        {
+                            "Id": "Good_EncounterPercentage",
+                            "Name": "EncounterPercentage",
+                            "Type": "slider_int",
+                            "Default": 20,
+                            "Description": "The likelihood of a chest turning into a mimic",
+                            "Handles": {
+                                "DescriptionHandle": "ha62e2351g99c6g43b5gb830g7c3e8a9003dc",
+                                "NameHandle": "ha07c36f1gdacdg4e25gbb2bgf8ee440e09c1"
+                            },"Options": {
+                                "Min": 0,
+                                "Max": 100
+                            }
+                        },
+                        {
+                            "Id": "Good_HarderMimics",
+                            "Name": "HarderMimics",
+                            "Type": "checkbox",
+                            "Default": true,
+                            "Description": "Give Mimics the ability to steal your armor. Turning this off will restore default behaviour",
+                            "Handles": {
+                                "DescriptionHandle": "hb702ada3g2103g4fcbga0d3g4dc29aa9afdc",
+                                "NameHandle": "h07b4a349gacabg413bg9d92gfee5fff3651b"
+                            }
+                        }
+                    ],
+                    "Handles": {
+                        "NameHandle": "h6486a618ge723g479fga67dg84a92418b2ab"
                     }
                 }
             ]
