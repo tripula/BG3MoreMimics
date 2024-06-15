@@ -14,42 +14,35 @@ HasPrinted = {}
 Ext.Osiris.RegisterListener("LevelGameplayStarted", 2, "after", function(levelName, _)
     local party = Osi.DB_PartyMembers:Get(nil)
     for i = #party, 1, -1 do
-        TryAddPassive((party[i][1]), "MIMIC_Conversion_Aura")
+        TryRemovePassive((party[i][1]), "MIMIC_Conversion_Aura")
     end
 end)
 
 Ext.Osiris.RegisterListener("CharacterJoinedParty", 1, "after", function(actor)
-    TryAddPassive(actor, "MIMIC_Conversion_Aura")
+    TryRemovePassive(actor, "MIMIC_Conversion_Aura")
 end)
 
 Ext.Osiris.RegisterListener("MovedBy", 2, "before", function(item, character) 
-    local tags = utils.GetTags(item)
-    if tags.OsirisTags['ACT1_HAG_ILLUSION'] then
-        Osi.ApplyStatus(item, 'HAG_MASK_ILLUSION', 60, 1, character)
-    end
+    AttemptTransformToMimic(item, character)
 end)
 
 Ext.Osiris.RegisterListener("AttackedBy", 7, "before", function(defender, attackerOwner, attacker2, damageType, damageAmount, damageCause, storyActionID)
-    local tags = utils.GetTags(defender)
-    --_P(defender)
-    if tags.OsirisTags['ACT1_HAG_ILLUSION'] then
-        Osi.ApplyStatus(defender, 'HAG_MASK_ILLUSION', 60, 1, attackerOwner)
-    end
+    AttemptTransformToMimic(defender, attackerOwner)
 end)
 
 Ext.Osiris.RegisterListener("Opened", 1, "before", function(item)
-    --_P(item)
-    local tags = utils.GetTags(item)
-    if tags.OsirisTags['ACT1_HAG_ILLUSION'] then
-        Osi.ApplyStatus(item, 'HAG_MASK_ILLUSION', 60, 1, Osi.GetHostCharacter())
-        -- Osi.CloseUI(Osi.GetHostCharacter(), "") closeui doesn't work
-    end
+    AttemptTransformToMimic(item, GetHostCharacter())
 end)
 
 Ext.Osiris.RegisterListener("StatusRemoved", 4, "after", function(object, status, causee, storyActionID)
+    _P("REMOVED:", status)
     if (status == "AMBUSH_HELPER" and Osi.IsInCombat(object) ~= 1) then
         Osi.RemoveStatus(object, "AMBUSH_IMMUNITY")
         return
+    end
+
+    if (status == "HAG_MASK_HAGDEAD") then
+        Osi.RemoveStatus(object, "MIMIC_AURA")
     end
 
     if (status == "TRANSFORM_HELPER") then
@@ -65,22 +58,15 @@ Ext.Osiris.RegisterListener("StatusRemoved", 4, "after", function(object, status
 end)
 
 Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(object, status, causee, storyActionID)
+    
+    -- When the Player wears the Hag Mask, Transform nearby chests to mimics
+    if (status == "HAG_MASK_HAGDEAD") then
+        Osi.ApplyStatus(object, "MIMIC_AURA", -1)
+        return
+    end
+    
     if (status == "CONVERT_CHEST_TO_MIMIC") then
-        --_P(object)
-        local substring = (string.find(object, "CONT") and string.find(object, "Chest")) or (string.find(object, "BuriedChest"))
-        if substring then
-            --_P("CONVERT", object)
-            -- do not mark camp chests
-            if string.find(object, "PlayerCampChest") then
-                return
-            end
-            local convertToChestThreshold = GuidToProperty(Get("Seed"), object)
-            --_P(object, convertToChestThreshold, utils.PercentToReal(Get("EncounterPercentage")))
-            if (utils.PercentToReal(Get("EncounterPercentage")) > convertToChestThreshold) then
-                --_P("setting tag to chest", object)
-                Osi.SetTag(object, '2a84bac4-3111-43a6-8f0c-9995b6187962')
-            end
-        end
+        AttemptTransformToMimic(object, causee)
         return
     end
 
@@ -103,7 +89,7 @@ Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(object, status
                 Osi.ApplyStatus(causee, "ABSORB_ITEM", 0, 100, stealGear)
                 Osi.ApplyStatus(causee, "POTION_OF_HEALING", 0)
                 Osi.ApplyStatus(object, "WYR_POTENTDRINK_BLACKEDOUT", 12)
-                --StealItem(UnequipGearSlot(object, "Underwear", true), causee) -- ( ͡° ͜ʖ ͡°)
+                --Osi.ApplyStatus(causee, "ABSORB_ITEM", 0, 100, UnequipGearSlot(object, "Underwear", true)) -- ( ͡° ͜ʖ ͡°)
             end
             return
         end
@@ -123,33 +109,6 @@ Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(object, status
     -- Move the item into the mimic's inventory. (causee = item in this case)
     if (status == "ABSORB_ITEM") then
         Osi.ToInventory(causee, object, 1, 0, 0)
-        return
-    end
-
-    if (status == "HAG_MASK_ILLUSION") then
-        local substring = (string.find(object, "CONT") and string.find(object, "Chest")) or (string.find(object, "BuriedChest"))
-        if substring then
-            local x,y,z = Osi.GetPosition(object)
-            local creatureTplId = "4f694363-716d-48be-bb05-bfcf558a081f"
-            local createdGUID = Osi.CreateAt(creatureTplId, x, y, z, 0, 1, '')
-            
-            if createdGUID then
-                --_P(string.format('Successfully spawned %s [%s]', creatureTplId, createdGUID))
-                if Get("HarderMimics") then
-                    TryAddSpell(createdGUID, "Target_Vicious_Bite_Mimic")
-                end
-                Osi.MoveAllItemsTo(object, createdGUID, 0, 0, 1)
-                if Osi.HasActiveStatus(Osi.GetHostCharacter(), "HAG_MASK_HAGDEAD") ~= 1 then
-                    Osi.ApplyStatus(createdGUID, "CALL_NEIGHBOURS_HELPER", 0)
-                end
-                Osi.ApplyStatus(object, "TRANSFORM_HELPER", 0)
-            else
-                _P((string.format('Failed to spawn %s', creatureTplId)))
-                Osi.ClearTag(object, "2a84bac4-3111-43a6-8f0c-9995b6187962")
-                Osi.RemoveStatus(object, "HAG_MASK_ILLUSION")
-                Osi.Die(object)
-            end
-        end
         return
     end
 end)
@@ -206,7 +165,7 @@ end
 
 function CallNeighbours(mimic)
     Osi.ApplyStatus(mimic, "AMBUSH_AURA", 1)
-    Osi.ApplyStatus(mimic, "HAG_MASK_HAGDEAD", 0)
+    Osi.ApplyStatus(mimic, "MIMIC_AURA", 0)
 end
 
 -- Add spell if actor doesn't have it yet
@@ -216,12 +175,55 @@ function TryAddSpell(actor, spellName)
     end
 end
 
--- Add passive if actor doesn't have it yet
-function TryAddPassive(actor, passiveName)
-    if Osi.HasPassive(actor, passiveName) == 0 then
-        Osi.AddPassive(actor, passiveName)
+-- Uninstall the old passive
+function TryRemovePassive(actor, passiveName)
+    if Osi.HasPassive(actor, passiveName) ~= 0 then
+        Osi.RemovePassive(actor, passiveName)
+        Osi.RemoveStatus(actor, "MIMIC_AURA")
+        _P("Succesfully removed passive", passiveName, "on", actor)
     end
 end
 
-print("MoreMimics is loaded successfully")
+---Attempt to Transform an object into a Mimic
+---@param object string
+---@param causee string
+function AttemptTransformToMimic(object, causee)
+    -- only transform buried chests or generic chests.
+    local substring = (string.find(object, "CONT") and string.find(object, "Chest")) or (string.find(object, "BuriedChest"))
+    if substring then
+        --_P("CONVERT", object)
+        -- do not mark camp chests
+        if string.find(object, "PlayerCampChest") then
+            return false
+        end
+        local convertToChestThreshold = GuidToProperty(Get("Seed"), object)
+        _P(object, convertToChestThreshold, utils.PercentToReal(Get("EncounterPercentage")))
+        if (utils.PercentToReal(Get("EncounterPercentage")) > convertToChestThreshold) then
+            local x,y,z = Osi.GetPosition(object)
+            local creatureTplId = "4f694363-716d-48be-bb05-bfcf558a081f"
+            local createdGUID = Osi.CreateAt(creatureTplId, x, y, z, 0, 1, '')
+            
+            if createdGUID then
+                --_P(string.format('Successfully spawned %s [%s]', creatureTplId, createdGUID))
+                if Get("HarderMimics") then
+                    TryAddSpell(createdGUID, "Target_Vicious_Bite_Mimic")
+                end
+                Osi.MoveAllItemsTo(object, createdGUID, 0, 0, 1)
+                -- Surprise player if no mask is worn
+                if Osi.HasActiveStatus(causee, "HAG_MASK_HAGDEAD") ~= 1 then
+                    Osi.ApplyStatus(createdGUID, "CALL_NEIGHBOURS_HELPER", 0)
+                end
+                Osi.ApplyStatus(object, "TRANSFORM_HELPER", 0)
+            else
+                _P((string.format('Failed to spawn %s', creatureTplId)))
+                Osi.Die(object)
+            end
+        end
 
+        return true
+    end
+
+    return false
+end
+
+print("MoreMimics is loaded successfully")

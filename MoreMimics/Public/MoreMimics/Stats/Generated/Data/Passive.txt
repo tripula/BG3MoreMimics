@@ -1,6 +1,0 @@
-new entry "MIMIC_Conversion_Aura"
-type "PassiveData"
-data "Properties" "IsHidden"
-data "StatsFunctorContext" "OnLongRest;OnCreate"
-data "Conditions" "not Self()"
-data "StatsFunctors" "ApplyStatus(MIMIC_AURA,100,-1)"
