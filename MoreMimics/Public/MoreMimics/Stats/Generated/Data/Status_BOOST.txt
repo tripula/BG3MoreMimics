@@ -49,6 +49,7 @@ new entry "TRANSFORM_HELPER"
 type "StatusData"
 data "StatusType" "BOOST"
 data "StatusPropertyFlags" "DisableOverhead;DisableCombatlog;DisablePortraitIndicator"
+data "StatusEffect" "f4ee8056-d215-4493-9509-899c642c371d"
 data "StackType" "Overwrite"
 
 new entry "CALL_NEIGHBOURS_HELPER"

@@ -51,10 +51,12 @@ Ext.Osiris.RegisterListener("StatusRemoved", 4, "after", function(object, status
 
     if (status == "HAG_MASK_HAGDEAD") then
         Osi.RemoveStatus(object, "MIMIC_AURA")
+        return
     end
 
     if (status == "TRANSFORM_HELPER") then
-        Osi.RequestDelete(object)
+        TransformIntoMimic(object, causee)
+        --Osi.RequestDelete(object)
         return
     end
 
@@ -62,12 +64,7 @@ Ext.Osiris.RegisterListener("StatusRemoved", 4, "after", function(object, status
         Osi.SetFaction(object, "64321d50-d516-b1b2-cfac-2eb773de1ff6")
         Osi.RemoveStatus(object, "SURPRISED")
         CallNeighbours(object)
-    end
-end)
-
-Ext.Osiris.RegisterListener("StatusApplied", 4, "before", function(object, status, causee, storyActionID)
-    if (status == "TRANSFORM_HELPER") then
-        TransformIntoMimic(object, causee)
+        return
     end
 end)
 
@@ -77,6 +74,11 @@ Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(object, status
     if (status == "HAG_MASK_HAGDEAD") then
         Osi.ApplyStatus(object, "MIMIC_AURA", -1)
         return
+    end
+
+    if (status == "TRANSFORM_HELPER") then
+        Osi.Die(object)
+        Osi.RemoveStatus(object, "TRANSFORM_HELPER", causee)
     end
     
     if (status == "CONVERT_CHEST_TO_MIMIC") then
@@ -151,34 +153,8 @@ function UnequipGearSlot(character, slot, forceUnlock)
     return gearPiece
 end
 
-  -- Function to convert GUID to a property value in range [0, 1], with an optional seed
-function GuidToProperty(guid, seed)
-    -- Step 1: Concatenate the seed with the GUID (if a seed is provided)
-    local input = guid
-    if seed then
-        input = seed .. guid
-    end
-    
-    -- Step 2: Hash the combined input using MD5
-    local hash = md5.sum(input)
-    
-    -- Step 3: Normalize the hash value to a float between 0 and 1
-    -- We'll use the first 8 bytes of the hash to create a floating-point number
-    local byte1, byte2, byte3, byte4, byte5, byte6, byte7, byte8 = string.byte(hash, 1, 8)
-    
-    -- Combine bytes to form a 64-bit integer
-    local hash_int = ((byte1 * 2^56) + (byte2 * 2^48) + (byte3 * 2^40) + (byte4 * 2^32)
-                    + (byte5 * 2^24) + (byte6 * 2^16) + (byte7 * 2^8) + byte8)
-    
-    -- Normalize to the range [0, 1]
-    local max_int = 2^64 - 1
-    local normalized_value = hash_int / max_int
-    
-    return normalized_value
-end
-
 function CallNeighbours(mimic)
-    Osi.ApplyStatus(mimic, "AMBUSH_AURA", 1)
+    Osi.ApplyStatus(mimic, "AMBUSH_AURA", 0)
     Osi.ApplyStatus(mimic, "MIMIC_AURA", 0)
 end
 
@@ -208,6 +184,7 @@ end
 ---@param object string
 ---@param causee string
 function MarkForMimicConversion(object, causee)
+    -- only transform buried chests or generic chests.
     local substring = (string.find(object, "CONT") and string.find(object, "Chest")) or (string.find(object, "BuriedChest"))
     if substring then
         --_P("CONVERT", object)
@@ -218,7 +195,7 @@ function MarkForMimicConversion(object, causee)
         local convertToChestThreshold = GuidToProperty(Get("Seed"), object)
         --_P(object, convertToChestThreshold, utils.PercentToReal(Get("EncounterPercentage")))
         if (utils.PercentToReal(Get("EncounterPercentage")) > convertToChestThreshold) then
-            Osi.ApplyStatus(object, "TRANSFORM_HELPER", 0, 100, causee)
+            Osi.ApplyStatus(object, "TRANSFORM_HELPER", 6, 100, causee)
         end
 
         return true
@@ -231,8 +208,6 @@ end
 ---@param object string
 ---@param causee string
 function TransformIntoMimic(object, causee)
-    -- only transform buried chests or generic chests.
-
     if Osi.IsDead(object) == 1 then
         --_P((string.format('Object died, wont spawn')))
 
@@ -244,9 +219,9 @@ function TransformIntoMimic(object, causee)
     local createdGUID = Osi.CreateAt(creatureTplId, x, y, z, 0, 1, '')
     
     if createdGUID then
-        --_P(string.format('Successfully spawned %s [%s]', creatureTplId, createdGUID))
-        if Osi.IsInCombat(causee) ~= 1 then
-            Osi.QRY_StartDialogCustom_Fixed("GLO_PAD_Mimic_Revealed_55471c86-3b69-ccae-d0e3-e8749cf41d9e", causee, "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", 1, 1, -1, 1 )  
+        --_P(string.format('Successfully spawned %s [%s]', creatureTplId, createdGUID))    
+        if (Osi.HasActiveStatus(causee,"AMBUSH_IMMUNITY") == 1 or Osi.HasPassive(causee, "Alert") == 1 or Osi.HasPassive(causee, "Surprise_Immunity") == 1) and Osi.IsPlayer(causee) == 1 then
+            Osi.QRY_StartDialogCustom_Fixed("GLO_PAD_Mimic_Revealed_55471c86-3b69-ccae-d0e3-e8749cf41d9e", causee, "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", 1, 1, -1, 1 )
         end
         
         if Get("HarderMimics") then
@@ -256,7 +231,7 @@ function TransformIntoMimic(object, causee)
         -- Surprise player if no mask is worn
         if Osi.HasActiveStatus(causee, "HAG_MASK_HAGDEAD") ~= 1 then
             Osi.ApplyStatus(createdGUID, "CALL_NEIGHBOURS_HELPER", 0)
-            if Osi.IsInCombat(causee) ~= 1 then
+            if Osi.HasActiveStatus(causee,"AMBUSH_IMMUNITY") ~= 1 and Osi.HasPassive(causee, "Alert") ~= 1 and Osi.HasPassive(causee, "Surprise_Immunity") ~= 1 and Osi.IsPlayer(causee) == 1 then
                 Osi.QRY_StartDialogCustom_Fixed("GLO_PAD_Mimic_Surprised_cb5f94c8-ee5b-c17a-959c-64bc6f88b417", causee, "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", 1, 1, -1, 1 )
             end
         end
@@ -265,6 +240,32 @@ function TransformIntoMimic(object, causee)
     end
 
     Osi.Die(object)
+end
+
+  -- Function to convert GUID to a property value in range [0, 1], with an optional seed
+  function GuidToProperty(guid, seed)
+    -- Step 1: Concatenate the seed with the GUID (if a seed is provided)
+    local input = guid
+    if seed then
+        input = seed .. guid
+    end
+    
+    -- Step 2: Hash the combined input using MD5
+    local hash = md5.sum(input)
+    
+    -- Step 3: Normalize the hash value to a float between 0 and 1
+    -- We'll use the first 8 bytes of the hash to create a floating-point number
+    local byte1, byte2, byte3, byte4, byte5, byte6, byte7, byte8 = string.byte(hash, 1, 8)
+    
+    -- Combine bytes to form a 64-bit integer
+    local hash_int = ((byte1 * 2^56) + (byte2 * 2^48) + (byte3 * 2^40) + (byte4 * 2^32)
+                    + (byte5 * 2^24) + (byte6 * 2^16) + (byte7 * 2^8) + byte8)
+    
+    -- Normalize to the range [0, 1]
+    local max_int = 2^64 - 1
+    local normalized_value = hash_int / max_int
+    
+    return normalized_value
 end
 
 print("MoreMimics is loaded successfully")
