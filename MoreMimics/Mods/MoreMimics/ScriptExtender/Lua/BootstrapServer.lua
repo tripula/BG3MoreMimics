@@ -15,14 +15,16 @@ Ext.Osiris.RegisterListener("LevelGameplayStarted", 2, "after", function(levelNa
     local party = Osi.DB_PartyMembers:Get(nil)
     for i = #party, 1, -1 do
         TryRemovePassive((party[i][1]), "MIMIC_Conversion_Aura")
+        TryRemoveStatus((party[i][1]), "MIMIC_AURA")
     end
 end)
 
 Ext.Osiris.RegisterListener("CharacterJoinedParty", 1, "after", function(actor)
     TryRemovePassive(actor, "MIMIC_Conversion_Aura")
+    TryRemoveStatus(actor, "MIMIC_AURA")
 end)
 
-Ext.Osiris.RegisterListener("MovedBy", 2, "before", function(item, character) 
+Ext.Osiris.RegisterListener("PreMovedBy", 2, "before", function(item, character) 
     AttemptTransformToMimic(item, character)
 end)
 
@@ -30,8 +32,9 @@ Ext.Osiris.RegisterListener("AttackedBy", 7, "before", function(defender, attack
     AttemptTransformToMimic(defender, attackerOwner)
 end)
 
-Ext.Osiris.RegisterListener("Opened", 1, "before", function(item)
-    AttemptTransformToMimic(item, GetHostCharacter())
+Ext.Osiris.RegisterListener("TemplateOpening", 3, "before", function(itemTemplate, item2, character)
+    _P(itemTemplate, item2, character)
+    AttemptTransformToMimic(item2, character)
 end)
 
 Ext.Osiris.RegisterListener("StatusRemoved", 4, "after", function(object, status, causee, storyActionID)
@@ -63,6 +66,10 @@ Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(object, status
     if (status == "HAG_MASK_HAGDEAD") then
         Osi.ApplyStatus(object, "MIMIC_AURA", -1)
         return
+    end
+
+    if (status == "TRANSFORM_HELPER") then
+        Osi.Die(object)
     end
     
     if (status == "CONVERT_CHEST_TO_MIMIC") then
@@ -179,11 +186,16 @@ end
 function TryRemovePassive(actor, passiveName)
     if Osi.HasPassive(actor, passiveName) ~= 0 then
         Osi.RemovePassive(actor, passiveName)
-        Osi.RemoveStatus(actor, "MIMIC_AURA")
-        _P("Succesfully removed passive", passiveName, "on", actor)
+        --_P("Succesfully removed passive", passiveName, "on", actor)
     end
 end
 
+function TryRemoveStatus(actor, statusName)
+    if Osi.HasActiveStatus(actor, statusName) ~= 0 then
+        Osi.RemoveStatus(actor, statusName)
+        --_P("Succesfully removed status", statusName, "on", actor)
+    end
+end
 ---Attempt to Transform an object into a Mimic
 ---@param object string
 ---@param causee string
@@ -205,6 +217,8 @@ function AttemptTransformToMimic(object, causee)
             
             if createdGUID then
                 --_P(string.format('Successfully spawned %s [%s]', creatureTplId, createdGUID))
+                Osi.QRY_StartDialogCustom_Fixed("GLO_PAD_Mimic_Surprised_cb5f94c8-ee5b-c17a-959c-64bc6f88b417", causee, "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", 1, 1, -1, 1 )
+    
                 if Get("HarderMimics") then
                     TryAddSpell(createdGUID, "Target_Vicious_Bite_Mimic")
                 end
