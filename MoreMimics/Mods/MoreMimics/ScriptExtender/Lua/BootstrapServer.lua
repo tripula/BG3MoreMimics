@@ -35,7 +35,7 @@ Ext.Osiris.RegisterListener("Opened", 1, "before", function(item)
 end)
 
 Ext.Osiris.RegisterListener("StatusRemoved", 4, "after", function(object, status, causee, storyActionID)
-    _P("REMOVED:", status)
+    --_P("REMOVED:", status)
     if (status == "AMBUSH_HELPER" and Osi.IsInCombat(object) ~= 1) then
         Osi.RemoveStatus(object, "AMBUSH_IMMUNITY")
         return
@@ -197,7 +197,7 @@ function AttemptTransformToMimic(object, causee)
             return false
         end
         local convertToChestThreshold = GuidToProperty(Get("Seed"), object)
-        _P(object, convertToChestThreshold, utils.PercentToReal(Get("EncounterPercentage")))
+        --_P(object, convertToChestThreshold, utils.PercentToReal(Get("EncounterPercentage")))
         if (utils.PercentToReal(Get("EncounterPercentage")) > convertToChestThreshold) then
             local x,y,z = Osi.GetPosition(object)
             local creatureTplId = "4f694363-716d-48be-bb05-bfcf558a081f"
