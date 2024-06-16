@@ -64,8 +64,8 @@
                         {
                             "Id": "General_HarderMimics",
                             "Name": "HarderMimics",
-                            "Type": "checkbox",
-                            "Default": true,
+                            "Type": "slider_int",
+                            "Default": 0,
                             "Description": "Give Mimics the ability to steal your armor. Turning this off will restore default behaviour",
                             "VisibleIf": {
                                 "Conditions": [
@@ -79,6 +79,10 @@
                             "Handles": {
                                 "DescriptionHandle": "hb702ada3g2103g4fcbga0d3g4dc29aa9afdc",
                                 "NameHandle": "h07b4a349gacabg413bg9d92gfee5fff3651b"
+                            },
+                            "Options": {
+                                "Min": 0,
+                                "Max": 100
                             }
                         }
                     ],
@@ -121,12 +125,16 @@
                         {
                             "Id": "Poor_HarderMimics",
                             "Name": "HarderMimics",
-                            "Type": "checkbox",
-                            "Default": true,
-                            "Description": "Give Mimics the ability to steal your armor. Turning this off will restore default behaviour",
+                            "Type": "slider_int",
+                            "Default": 0,
+                            "Description": "Give Mimics the ability to steal your armor. 1-> steal 1 piece of armor + 2.4% to steal another one.  100 -> steal 1 piece of armor + 4*(80% chance to steal 1 îece of armor)",
                             "Handles": {
                                 "DescriptionHandle": "hb702ada3g2103g4fcbga0d3g4dc29aa9afdc",
                                 "NameHandle": "h07b4a349gacabg413bg9d92gfee5fff3651b"
+                            },
+                            "Options": {
+                                "Min": 0,
+                                "Max": 100
                             }
                         }
                     ],
@@ -169,12 +177,16 @@
                         {
                             "Id": "Ok_HarderMimics",
                             "Name": "HarderMimics",
-                            "Type": "checkbox",
-                            "Default": true,
-                            "Description": "Give Mimics the ability to steal your armor. Turning this off will restore default behaviour",
+                            "Type": "slider_int",
+                            "Default": 0,
+                            "Description": "Give Mimics the ability to steal your armor. 1-> steal 1 piece of armor + 2.4% to steal another one.  100 -> steal 1 piece of armor + 4*(80% chance to steal 1 îece of armor)",
                             "Handles": {
                                 "DescriptionHandle": "hb702ada3g2103g4fcbga0d3g4dc29aa9afdc",
                                 "NameHandle": "h07b4a349gacabg413bg9d92gfee5fff3651b"
+                            },
+                            "Options": {
+                                "Min": 0,
+                                "Max": 100
                             }
                         }
                     ],
@@ -217,12 +229,16 @@
                         {
                             "Id": "Good_HarderMimics",
                             "Name": "HarderMimics",
-                            "Type": "checkbox",
-                            "Default": true,
-                            "Description": "Give Mimics the ability to steal your armor. Turning this off will restore default behaviour",
+                            "Type": "slider_int",
+                            "Default": 0,
+                            "Description": "Give Mimics the ability to steal your armor. 1-> steal 1 piece of armor + 2.4% to steal another one.  100 -> steal 1 piece of armor + 4*(80% chance to steal 1 îece of armor)",
                             "Handles": {
                                 "DescriptionHandle": "hb702ada3g2103g4fcbga0d3g4dc29aa9afdc",
                                 "NameHandle": "h07b4a349gacabg413bg9d92gfee5fff3651b"
+                            },
+                            "Options": {
+                                "Min": 0,
+                                "Max": 100
                             }
                         }
                     ],

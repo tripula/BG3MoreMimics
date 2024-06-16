@@ -4,6 +4,9 @@ local utils = Ext.Require("utils.lua")
 
 ModuleUUID = "c19ca43a-c3c7-4e58-9d00-f7d928e72074"
 
+PersistentVars = {}
+
+
 function Get(ID_name)
 	return Mods.BG3MCM.MCMAPI:GetSettingValue(ID_name, ModuleUUID)
 end
@@ -159,32 +162,26 @@ Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(object, status
     end
 
     if status == "ARMOR_STEAL_HELPER" then
-        local stealList = GetEquippedGearSlots(object)
-        --_D(stealList)
+
+        local settingsPrefix = PersistentVars[causee]
+        local mimicsHarderLvl = Get(settingsPrefix.."_HarderMimics")
+
+        if mimicsHarderLvl > 0 then
+            local stealList = GetEquippedGearSlots(object)
+
+            stealItem(object, causee, stealList)
+            local nb = math.ceil(mimicsHarderLvl/25)
+            local chance = math.fmod((100*mimicsHarderLvl/25)-1,100*nb)/nb*.8
+
+            --_P("Hard Mimics -> nb:"..nb.."   chance:"..chance)
+            while nb > 0 and #stealList > 0 do
+                if math.random(1, 100) < chance then
+                    stealItem(object, causee, stealList)
+                end
+                nb = nb - 1
+            end
+        end
         -- if only 1 thing left to steal, steal and knock out
-        if #stealList == 1 then
-            --_P(stealList[1])
-
-            local stealGear = UnequipGearSlot(object, stealList[1], true)
-            if stealGear ~= nil then
-                Osi.ApplyStatus(object, "ARMOR_STEAL", 0, 100, causee)
-                Osi.ApplyStatus(causee, "ABSORB_ITEM", 0, 100, stealGear)
-                Osi.ApplyStatus(causee, "POTION_OF_HEALING", 0)
-                Osi.ApplyStatus(object, "WYR_POTENTDRINK_BLACKEDOUT", 12)
-                --Osi.ApplyStatus(causee, "ABSORB_ITEM", 0, 100, UnequipGearSlot(object, "Underwear", true)) -- ( ͡° ͜ʖ ͡°)
-            end
-            return
-        end
-
-        for i = 1, #stealList do
-            local stealGear = UnequipGearSlot(object, stealList[i], true)
-            if stealGear ~= nil then
-                Osi.ApplyStatus(object, "ARMOR_STEAL", 0)
-                Osi.ApplyStatus(causee, "ABSORB_ITEM", 0, 100, stealGear)
-                Osi.ApplyStatus(causee, "POTION_OF_HEALING", 0)
-                return
-            end
-        end
         return
     end
 
@@ -195,8 +192,20 @@ Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(object, status
     end
 end)
 
+function stealItem(character, mimic, stealList)
+    local itemToStealIndex = math.random(1,#stealList)
+    local stealGear = UnequipGearSlot(character, stealList[itemToStealIndex], true)
+    table.remove(stealList, itemToStealIndex)
+    Osi.ApplyStatus(character, "ARMOR_STEAL", 0)
+    Osi.ApplyStatus(mimic, "ABSORB_ITEM", 0, 100, stealGear)
+    Osi.ApplyStatus(mimic, "POTION_OF_HEALING", 0)
+    if #stealList == 1 then
+        Osi.ApplyStatus(character, "WYR_POTENTDRINK_BLACKEDOUT", 12)
+    end
+end
+
 function GetEquippedGearSlots(character)
-    local slots = {"Helmet", "Gloves", "Boots", "Cloak", "Breast"}
+    local slots = {"Helmet", "Gloves", "Boots", "Cloak", "Breast", "Ring", "Ring2", "Amulet"}
     local equippedGearSlots = {}
     for i = 1, #slots do
         local gearPiece = Osi.GetEquippedItem(character, slots[i]);
@@ -292,8 +301,11 @@ function TransformIntoMimic(object, causee)
             Osi.QRY_StartDialogCustom_Fixed("GLO_PAD_Mimic_Revealed_55471c86-3b69-ccae-d0e3-e8749cf41d9e", causee, "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", 1, 1, -1, 1 )
         end
 
-        if Get("General_HarderMimics") then
+        local settingsPrefix = GetSettingsPrefix(object)
+        
+        if Get(settingsPrefix.."_HarderMimics") > 0 then
             TryAddSpell(createdGUID, "Target_Vicious_Bite_Mimic")
+            PersistentVars[createdGUID] = settingsPrefix
         end
         Osi.MoveAllItemsTo(object, createdGUID, 0, 0, 1)
         -- Surprise player if no mask is worn
