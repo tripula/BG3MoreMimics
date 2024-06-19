@@ -252,7 +252,7 @@ function TransformIntoMimic(object, causee)
     local createdGUID = Osi.CreateAt(creatureTplId, x, y, z, 0, 1, '')
     
     if createdGUID then
-        _P(string.format('Successfully spawned %s [%s]', creatureTplId, createdGUID))    
+        --_P(string.format('Successfully spawned %s [%s]', creatureTplId, createdGUID))    
         if (Osi.HasActiveStatus(causee,"AMBUSH_IMMUNITY") == 1 or Osi.HasPassive(causee, "Alert") == 1 or Osi.HasPassive(causee, "Surprise_Immunity") == 1) and Osi.IsPlayer(causee) == 1 then
             Osi.QRY_StartDialogCustom_Fixed("GLO_PAD_Mimic_Revealed_55471c86-3b69-ccae-d0e3-e8749cf41d9e", causee, "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", 1, 1, -1, 1 )
         end
