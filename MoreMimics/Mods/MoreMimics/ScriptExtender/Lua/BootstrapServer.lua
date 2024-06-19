@@ -10,6 +10,22 @@ end
 
 -- Define global variables
 HasPrinted = {}
+MimicType = {}
+
+MimicTemplateId = {
+    EASY = "23158926-5f3e-4997-a04e-bbebdd914e13",
+    NORMAL = "4f694363-716d-48be-bb05-bfcf558a081f",
+    HARD = "8db79e35-7dca-46e4-9602-d17938237dec",
+}
+
+MimicType[MimicTemplateId.EASY] = { DIFFICULTY = "Easy",
+                                    HEAL_STATUS = "FOOD_FRUIT_GOODBERRY" }
+
+MimicType[MimicTemplateId.NORMAL] = { DIFFICULTY = "Normal",
+                                      HEAL_STATUS = "POTION_OF_HEALING" }
+
+MimicType[MimicTemplateId.HARD] = { DIFFICULTY = "Hard",
+                                    HEAL_STATUS = "POTION_OF_HEALING_GREATER" }
 
 Ext.Osiris.RegisterListener("LevelGameplayStarted", 2, "after", function(levelName, _)
     local party = Osi.DB_PartyMembers:Get(nil)
@@ -38,7 +54,6 @@ Ext.Osiris.RegisterListener("AttackedBy", 7, "before", function(defender, attack
 end)
 
 Ext.Osiris.RegisterListener("TemplateOpening", 3, "before", function(itemTemplate, item2, character)
-    --_P(itemTemplate, item2, character)
     MarkForMimicConversion(item2, character)
 end)
 
@@ -77,8 +92,12 @@ Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(object, status
     end
 
     if (status == "TRANSFORM_HELPER") then
-        Osi.Die(object)
-        Osi.RemoveStatus(object, "TRANSFORM_HELPER", causee)
+        if Osi.IsInInventory(object) ~= 1 then
+            Osi.Die(object)
+            Osi.RemoveStatus(object, "TRANSFORM_HELPER", causee)
+        else
+            Osi.Drop(object)
+        end
     end
     
     if (status == "CONVERT_CHEST_TO_MIMIC") then
@@ -103,7 +122,7 @@ Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(object, status
             if stealGear ~= nil then
                 Osi.ApplyStatus(object, "ARMOR_STEAL", 0, 100, causee)
                 Osi.ApplyStatus(causee, "ABSORB_ITEM", 0, 100, stealGear)
-                Osi.ApplyStatus(causee, "POTION_OF_HEALING", 0)
+                Osi.ApplyStatus(causee, MimicType[string.sub(Osi.GetTemplate(causee), -36)].HEAL_STATUS, 0)
                 Osi.ApplyStatus(object, "WYR_POTENTDRINK_BLACKEDOUT", 12)
                 --Osi.ApplyStatus(causee, "ABSORB_ITEM", 0, 100, UnequipGearSlot(object, "Underwear", true)) -- ( ͡° ͜ʖ ͡°)
             end
@@ -115,7 +134,7 @@ Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(object, status
             if stealGear ~= nil then
                 Osi.ApplyStatus(object, "ARMOR_STEAL", 0)
                 Osi.ApplyStatus(causee, "ABSORB_ITEM", 0, 100, stealGear)
-                Osi.ApplyStatus(causee, "POTION_OF_HEALING", 0)
+                Osi.ApplyStatus(causee, MimicType[string.sub(Osi.GetTemplate(causee), -36)].HEAL_STATUS, 0)
                 return
             end
         end
@@ -187,6 +206,10 @@ function MarkForMimicConversion(object, causee)
     -- only transform buried chests or generic chests.
     local substring = (string.find(object, "CONT") and string.find(object, "Chest")) or (string.find(object, "BuriedChest"))
     if substring then
+        
+        if Osi.HasActiveStatus(object, "TRANSFORM_HELPER") == 1 then
+            return false
+        end
         --_P("CONVERT", object)
         -- do not mark camp chests
         if string.find(object, "PlayerCampChest") then
@@ -195,7 +218,7 @@ function MarkForMimicConversion(object, causee)
         local convertToChestThreshold = GuidToProperty(Get("Seed"), object)
         --_P(object, convertToChestThreshold, utils.PercentToReal(Get("EncounterPercentage")))
         if (utils.PercentToReal(Get("EncounterPercentage")) > convertToChestThreshold) then
-            Osi.ApplyStatus(object, "TRANSFORM_HELPER", 6, 100, causee)
+            Osi.ApplyStatus(object, "TRANSFORM_HELPER", 1, 100, causee)
         end
 
         return true
@@ -215,7 +238,17 @@ function TransformIntoMimic(object, causee)
     end
 
     local x,y,z = Osi.GetPosition(object)
-    local creatureTplId = "4f694363-716d-48be-bb05-bfcf558a081f"
+
+    local playerLevel = Osi.GetLevel(GetHostCharacter())
+
+    local creatureTplId = nil
+    if 1 <= playerLevel and playerLevel <= 5 then
+        creatureTplId = MimicTemplateId.EASY
+    elseif 6 <= playerLevel and playerLevel <= 10 then
+        creatureTplId = MimicTemplateId.NORMAL
+    else
+        creatureTplId = MimicTemplateId.HARD
+    end
     local createdGUID = Osi.CreateAt(creatureTplId, x, y, z, 0, 1, '')
     
     if createdGUID then
@@ -225,7 +258,7 @@ function TransformIntoMimic(object, causee)
         end
         
         if Get("HarderMimics") then
-            TryAddSpell(createdGUID, "Target_Vicious_Bite_Mimic")
+            TryAddSpell(createdGUID, "Target_Vicious_Bite_Mimic_" .. MimicType[creatureTplId].DIFFICULTY)
         end
         Osi.MoveAllItemsTo(object, createdGUID, 0, 0, 1)
         -- Surprise player if no mask is worn
@@ -242,8 +275,8 @@ function TransformIntoMimic(object, causee)
     Osi.Die(object)
 end
 
-  -- Function to convert GUID to a property value in range [0, 1], with an optional seed
-  function GuidToProperty(guid, seed)
+-- Function to convert GUID to a property value in range [0, 1], with an optional seed
+function GuidToProperty(guid, seed)
     -- Step 1: Concatenate the seed with the GUID (if a seed is provided)
     local input = guid
     if seed then
