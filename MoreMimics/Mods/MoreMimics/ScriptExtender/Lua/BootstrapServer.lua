@@ -1,16 +1,13 @@
 local md5 = Ext.Require("md5.lua")
 local utils = Ext.Require("utils.lua")
 
-
-ModuleUUID = "c19ca43a-c3c7-4e58-9d00-f7d928e72074"
-
-function Get(ID_name)
-	return Mods.BG3MCM.MCMAPI:GetSettingValue(ID_name, ModuleUUID)
-end
-
 -- Define global variables
 HasPrinted = {}
 MimicType = {}
+
+USINGMCM = true
+ModuleUUID = "c19ca43a-c3c7-4e58-9d00-f7d928e72074"
+ConfigTable = {}
 
 MimicTemplateId = {
     EASY = "23158926-5f3e-4997-a04e-bbebdd914e13",
@@ -26,6 +23,18 @@ MimicType[MimicTemplateId.NORMAL] = { DIFFICULTY = "Normal",
 
 MimicType[MimicTemplateId.HARD] = { DIFFICULTY = "Hard",
                                     HEAL_STATUS = "POTION_OF_HEALING_GREATER" }
+
+function Get(ID_name)
+    if USINGMCM then
+        return Mods.BG3MCM.MCMAPI:GetSettingValue(ID_name, ModuleUUID)
+    else
+        if ID_name == "HarderMimics" then
+            return ConfigTable[ID_name] == 1
+        end
+
+        return ConfigTable[ID_name]
+    end
+end
 
 Ext.Osiris.RegisterListener("LevelGameplayStarted", 2, "after", function(levelName, _)
     local party = Osi.DB_PartyMembers:Get(nil)
@@ -299,6 +308,10 @@ function GuidToProperty(guid, seed)
     local normalized_value = hash_int / max_int
     
     return normalized_value
+end
+
+if not USINGMCM then
+    utils.ReadJsonFile()
 end
 
 print("MoreMimics is loaded successfully")
