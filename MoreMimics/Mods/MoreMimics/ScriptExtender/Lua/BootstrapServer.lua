@@ -5,7 +5,7 @@ local utils = Ext.Require("utils.lua")
 HasPrinted = {}
 MimicType = {}
 
-USINGMCM = true
+USINGMCM = false
 ModuleUUID = "c19ca43a-c3c7-4e58-9d00-f7d928e72074"
 ConfigTable = {}
 
