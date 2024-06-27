@@ -117,8 +117,12 @@
 
                 
 				<node id="GameObjects">
-					<attribute id="Flag" type="int32" value="1" />
+					<attribute id="AnubisConfigName" type="FixedString" value="GLO_Mimic" />
+					<attribute id="DisplayName" type="TranslatedString" handle="h4c7f121eg01fcg495cg8068g30e8f36e54b9" version="1" />
+					<attribute id="Faction" type="guid" value="0c219659-e46b-4644-9055-65271c93f8bb" />
+					<attribute id="Flag" type="int32" value="1" />  
 					<attribute id="LevelName" type="FixedString" value="" />
+					<attribute id="LevelOverride" type="int32" value="6" />
 					<attribute id="MapKey" type="FixedString" value="8db79e35-7dca-46e4-9602-d17938237dec" />
 					<attribute id="Name" type="LSString" value="S_LOW_CountingHouse_Mimic" />
 					<attribute id="TemplateName" type="FixedString" value="4f694363-716d-48be-bb05-bfcf558a081f" />
