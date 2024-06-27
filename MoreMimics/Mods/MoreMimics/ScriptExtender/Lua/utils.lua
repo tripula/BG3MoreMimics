@@ -1,6 +1,13 @@
 local utils = { }
 
-
+function utils.Contains(list, element)
+    for _, value in ipairs(list) do
+        if value == element then
+            return true
+        end
+    end
+    return false
+end
 
 function utils.PercentToReal(pct)
     -- Ensure the input is within the valid range of 0 to 100

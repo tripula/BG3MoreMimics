@@ -1,7 +1,7 @@
 new entry "MIMIC_AURA"
 type "StatusData"
 data "StatusType" "BOOST"
-data "AuraRadius" "6"
+data "AuraRadius" "12"
 data "AuraStatuses" "TARGET:IF(not Character()):ApplyStatus(CONVERT_CHEST_TO_MIMIC)"
 data "TickFunctors" ""
 data "StatusPropertyFlags" "DisableOverhead;DisableCombatlog;DisablePortraitIndicator"

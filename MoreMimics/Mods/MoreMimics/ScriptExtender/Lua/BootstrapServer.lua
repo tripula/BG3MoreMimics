@@ -1,9 +1,6 @@
 local md5 = Ext.Require("md5.lua")
 local utils = Ext.Require("utils.lua")
 
-
-ModuleUUID = "c19ca43a-c3c7-4e58-9d00-f7d928e72074"
-
 function Get(ID_name)
 	return Mods.BG3MCM.MCMAPI:GetSettingValue(ID_name, ModuleUUID)
 end
@@ -11,6 +8,9 @@ end
 -- Define global variables
 HasPrinted = {}
 MimicType = {}
+LevelName = nil
+
+ModuleUUID = "c19ca43a-c3c7-4e58-9d00-f7d928e72074"
 
 MimicTemplateId = {
     EASY = "23158926-5f3e-4997-a04e-bbebdd914e13",
@@ -19,12 +19,15 @@ MimicTemplateId = {
 }
 
 MimicType[MimicTemplateId.EASY] = { DIFFICULTY = "Easy",
+                                    LOCATIONS = { "WLD_Main_A" },
                                     HEAL_STATUS = "FOOD_FRUIT_GOODBERRY" }
 
 MimicType[MimicTemplateId.NORMAL] = { DIFFICULTY = "Normal",
+                                      LOCATIONS = { "CRE_Main_A", "SCL_Main_A", "BGO_Main_A" },
                                       HEAL_STATUS = "POTION_OF_HEALING" }
 
 MimicType[MimicTemplateId.HARD] = { DIFFICULTY = "Hard",
+                                    LOCATIONS = { "CTY_Main_A" },
                                     HEAL_STATUS = "POTION_OF_HEALING_GREATER" }
 
 Ext.Osiris.RegisterListener("LevelGameplayStarted", 2, "after", function(levelName, _)
@@ -32,7 +35,9 @@ Ext.Osiris.RegisterListener("LevelGameplayStarted", 2, "after", function(levelNa
     for i = #party, 1, -1 do
         TryRemovePassive((party[i][1]), "MIMIC_Conversion_Aura")
         TryRemoveStatus((party[i][1]), "MIMIC_AURA")
+        TryRemoveStatus((party[i][1]), "AMBUSH_IMMUNITY")
     end
+    LevelName  = levelName
 end)
 
 Ext.Osiris.RegisterListener("CharacterJoinedParty", 1, "after", function(actor)
@@ -107,7 +112,7 @@ Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(object, status
 
     if (status == "AMBUSH_HELPER" and Osi.HasActiveStatus(object, "AMBUSH_IMMUNITY") ~= 1) then
         Osi.ApplyStatus(object, "SURPRISED", 1)
-        Osi.ApplyStatus(object, "AMBUSH_IMMUNITY", -1)
+        Osi.ApplyStatus(object, "AMBUSH_IMMUNITY", 60)
         return
     end
 
@@ -215,6 +220,12 @@ function MarkForMimicConversion(object, causee)
         if string.find(object, "PlayerCampChest") then
             return false
         end
+
+        -- prevent tutorial chest mods / AV Item Shipment mod from converting into a mimic
+        if string.find(object, "TutorialChest") then
+            return false
+        end
+
         local convertToChestThreshold = GuidToProperty(Get("Seed"), object)
         --_P(object, convertToChestThreshold, utils.PercentToReal(Get("EncounterPercentage")))
         if (utils.PercentToReal(Get("EncounterPercentage")) > convertToChestThreshold) then
@@ -241,13 +252,22 @@ function TransformIntoMimic(object, causee)
 
     local playerLevel = Osi.GetLevel(GetHostCharacter())
 
-    local creatureTplId = nil
-    if 1 <= playerLevel and playerLevel <= 5 then
-        creatureTplId = MimicTemplateId.EASY
-    elseif 6 <= playerLevel and playerLevel <= 10 then
-        creatureTplId = MimicTemplateId.NORMAL
+    local creatureTplId = MimicTemplateId.NORMAL
+
+    if LevelName ~= nil then
+        if utils.Contains(MimicType[MimicTemplateId.EASY].LOCATIONS, LevelName) then
+            creatureTplId = MimicTemplateId.EASY
+        end
+
+        if utils.Contains(MimicType[MimicTemplateId.NORMAL].LOCATIONS, LevelName) then
+            creatureTplId = MimicTemplateId.NORMAL
+        end
+
+        if utils.Contains(MimicType[MimicTemplateId.HARD].LOCATIONS, LevelName) then
+            creatureTplId = MimicTemplateId.HARD
+        end
     else
-        creatureTplId = MimicTemplateId.HARD
+        creatureTplId = MimicTemplateId.NORMAL
     end
     local createdGUID = Osi.CreateAt(creatureTplId, x, y, z, 0, 1, '')
     
