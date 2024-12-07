@@ -1,4 +1,3 @@
-local md5 = Ext.Require("md5.lua")
 local utils = Ext.Require("utils.lua")
 
 function Get(ID_name)
@@ -7,28 +6,29 @@ end
 
 -- Define global variables
 HasPrinted = {}
-MimicType = {}
-LevelName = nil
 
 ModuleUUID = "c19ca43a-c3c7-4e58-9d00-f7d928e72074"
 
-MimicTemplateId = {
-    EASY = "23158926-5f3e-4997-a04e-bbebdd914e13",
-    NORMAL = "4f694363-716d-48be-bb05-bfcf558a081f",
-    HARD = "8db79e35-7dca-46e4-9602-d17938237dec",
-}
+EASY = {
+            DIFFICULTY = "Easy",
+            LOCATIONS = { "WLD_Main_A" },
+            HEAL_STATUS = "FOOD_FRUIT_GOODBERRY",
+            UUID = "23158926-5f3e-4997-a04e-bbebdd914e13"
+        }
 
-MimicType[MimicTemplateId.EASY] = { DIFFICULTY = "Easy",
-                                    LOCATIONS = { "WLD_Main_A" },
-                                    HEAL_STATUS = "FOOD_FRUIT_GOODBERRY" }
+NORMAL = {  DIFFICULTY = "Normal",
+            LOCATIONS = { "CRE_Main_A", "SCL_Main_A", "BGO_Main_A" },
+            HEAL_STATUS = "POTION_OF_HEALING",
+            UUID = "4f694363-716d-48be-bb05-bfcf558a081f"
+        }
 
-MimicType[MimicTemplateId.NORMAL] = { DIFFICULTY = "Normal",
-                                      LOCATIONS = { "CRE_Main_A", "SCL_Main_A", "BGO_Main_A" },
-                                      HEAL_STATUS = "POTION_OF_HEALING" }
+HARD = {    DIFFICULTY = "Hard",
+            LOCATIONS = { "CTY_Main_A" },
+            HEAL_STATUS = "POTION_OF_HEALING_GREATER",
+            UUID = "8db79e35-7dca-46e4-9602-d17938237dec"
+        }
 
-MimicType[MimicTemplateId.HARD] = { DIFFICULTY = "Hard",
-                                    LOCATIONS = { "CTY_Main_A" },
-                                    HEAL_STATUS = "POTION_OF_HEALING_GREATER" }
+MimicType = NORMAL
 
 Ext.Osiris.RegisterListener("LevelGameplayStarted", 2, "after", function(levelName, _)
     local party = Osi.DB_PartyMembers:Get(nil)
@@ -37,7 +37,12 @@ Ext.Osiris.RegisterListener("LevelGameplayStarted", 2, "after", function(levelNa
         TryRemoveStatus((party[i][1]), "MIMIC_AURA")
         TryRemoveStatus((party[i][1]), "AMBUSH_IMMUNITY")
     end
-    LevelName  = levelName
+    print("Level Started: ", levelName)
+    if utils.Contains(EASY.LOCATIONS, levelName) then
+        MimicType = EASY
+    elseif utils.Contains(HARD.LOCATIONS, levelName) then
+        MimicType = HARD
+    end
 end)
 
 Ext.Osiris.RegisterListener("CharacterJoinedParty", 1, "after", function(actor)
@@ -127,7 +132,7 @@ Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(object, status
             if stealGear ~= nil then
                 Osi.ApplyStatus(object, "ARMOR_STEAL", 0, 100, causee)
                 Osi.ApplyStatus(causee, "ABSORB_ITEM", 0, 100, stealGear)
-                Osi.ApplyStatus(causee, MimicType[string.sub(Osi.GetTemplate(causee), -36)].HEAL_STATUS, 0)
+                Osi.ApplyStatus(causee, MimicType.HEAL_STATUS, 0)
                 Osi.ApplyStatus(object, "WYR_POTENTDRINK_BLACKEDOUT", 12)
                 --Osi.ApplyStatus(causee, "ABSORB_ITEM", 0, 100, UnequipGearSlot(object, "Underwear", true)) -- ( ͡° ͜ʖ ͡°)
             end
@@ -139,7 +144,7 @@ Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(object, status
             if stealGear ~= nil then
                 Osi.ApplyStatus(object, "ARMOR_STEAL", 0)
                 Osi.ApplyStatus(causee, "ABSORB_ITEM", 0, 100, stealGear)
-                Osi.ApplyStatus(causee, MimicType[string.sub(Osi.GetTemplate(causee), -36)].HEAL_STATUS, 0)
+                Osi.ApplyStatus(causee, MimicType.HEAL_STATUS, 0)
                 return
             end
         end
@@ -250,35 +255,18 @@ function TransformIntoMimic(object, causee)
 
     local x,y,z = Osi.GetPosition(object)
 
-    local playerLevel = Osi.GetLevel(GetHostCharacter())
-
-    local creatureTplId = MimicTemplateId.NORMAL
-
-    if LevelName ~= nil then
-        if utils.Contains(MimicType[MimicTemplateId.EASY].LOCATIONS, LevelName) then
-            creatureTplId = MimicTemplateId.EASY
-        end
-
-        if utils.Contains(MimicType[MimicTemplateId.NORMAL].LOCATIONS, LevelName) then
-            creatureTplId = MimicTemplateId.NORMAL
-        end
-
-        if utils.Contains(MimicType[MimicTemplateId.HARD].LOCATIONS, LevelName) then
-            creatureTplId = MimicTemplateId.HARD
-        end
-    else
-        creatureTplId = MimicTemplateId.NORMAL
-    end
+    local creatureTplId = MimicType.UUID
     local createdGUID = Osi.CreateAt(creatureTplId, x, y, z, 0, 1, '')
     
     if createdGUID then
+        Osi.SetTag(createdGUID, "b47643e0-583c-4808-b108-f6d3b605b0a9") -- shadowcurse immune
         --_P(string.format('Successfully spawned %s [%s]', creatureTplId, createdGUID))    
         if (Osi.HasActiveStatus(causee,"AMBUSH_IMMUNITY") == 1 or Osi.HasPassive(causee, "Alert") == 1 or Osi.HasPassive(causee, "Surprise_Immunity") == 1) and Osi.IsPlayer(causee) == 1 then
             Osi.QRY_StartDialogCustom_Fixed("GLO_PAD_Mimic_Revealed_55471c86-3b69-ccae-d0e3-e8749cf41d9e", causee, "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", "NULL_00000000-0000-0000-0000-000000000000", 1, 1, -1, 1 )
         end
-        
+
         if Get("HarderMimics") then
-            TryAddSpell(createdGUID, "Target_Vicious_Bite_Mimic_" .. MimicType[creatureTplId].DIFFICULTY)
+            TryAddSpell(createdGUID, "Target_Vicious_Bite_Mimic_" .. MimicType.DIFFICULTY)
         end
         Osi.MoveAllItemsTo(object, createdGUID, 0, 0, 1)
         -- Surprise player if no mask is worn
@@ -303,21 +291,18 @@ function GuidToProperty(guid, seed)
         input = seed .. guid
     end
     
-    -- Step 2: Hash the combined input using MD5
-    local hash = md5.sum(input)
-    
-    -- Step 3: Normalize the hash value to a float between 0 and 1
-    -- We'll use the first 8 bytes of the hash to create a floating-point number
-    local byte1, byte2, byte3, byte4, byte5, byte6, byte7, byte8 = string.byte(hash, 1, 8)
-    
-    -- Combine bytes to form a 64-bit integer
-    local hash_int = ((byte1 * 2^56) + (byte2 * 2^48) + (byte3 * 2^40) + (byte4 * 2^32)
-                    + (byte5 * 2^24) + (byte6 * 2^16) + (byte7 * 2^8) + byte8)
-    
-    -- Normalize to the range [0, 1]
-    local max_int = 2^64 - 1
-    local normalized_value = hash_int / max_int
-    
+    -- Initialize a simple hash value
+    local hash = 0
+
+    -- Use a deterministic hash function (e.g., DJB2)
+    for i = 1, #input do
+        local char = string.byte(input, i)
+        hash = ((hash * 33) + char) % 4294967296 -- Ensure the result stays within a 32-bit range
+    end
+
+    -- Normalize the hash value to [0, 1]
+    local normalized_value = hash / 4294967295 -- 32-bit unsigned max value
+
     return normalized_value
 end
 
