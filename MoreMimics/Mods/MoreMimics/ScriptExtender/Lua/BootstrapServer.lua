@@ -42,6 +42,8 @@ Ext.Osiris.RegisterListener("LevelGameplayStarted", 2, "after", function(levelNa
         MimicType = EASY
     elseif utils.Contains(HARD.LOCATIONS, levelName) then
         MimicType = HARD
+    else
+        MimicType = NORMAL
     end
 end)
 
